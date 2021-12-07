@@ -8,7 +8,7 @@ use Facile\OpenIDClient\Service\UserInfoService;
 use Facile\OpenIDClient\Token\TokenVerifierBuilderInterface;
 use Facile\OpenIDClient\Token\UserInfoVerifierBuilder;
 
-final class UserInfoServiceBuilder extends AbstractServiceBuilder
+class UserInfoServiceBuilder extends AbstractServiceBuilder
 {
     /** @var TokenVerifierBuilderInterface|null */
     private $userInfoVerifierBuilder;

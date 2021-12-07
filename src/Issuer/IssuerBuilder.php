@@ -8,7 +8,7 @@ use Facile\JoseVerifier\JWK\JwksProviderBuilder;
 use Facile\OpenIDClient\Issuer\Metadata\IssuerMetadata;
 use Facile\OpenIDClient\Issuer\Metadata\Provider\MetadataProviderBuilder;
 
-final class IssuerBuilder implements IssuerBuilderInterface
+class IssuerBuilder implements IssuerBuilderInterface
 {
     /** @var MetadataProviderBuilder|null */
     private $metadataProviderBuilder;

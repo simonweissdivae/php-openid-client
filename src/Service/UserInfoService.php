@@ -21,7 +21,7 @@ use function sprintf;
 /**
  * @psalm-import-type TokenSetClaimsType from TokenSetInterface
  */
-final class UserInfoService
+class UserInfoService
 {
     /** @var ClientInterface */
     private $client;

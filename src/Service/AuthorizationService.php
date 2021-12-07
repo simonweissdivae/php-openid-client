@@ -36,7 +36,7 @@ use Psr\Http\Message\ServerRequestInterface;
  *
  * @psalm-import-type TokenSetMixedType from TokenSetInterface
  */
-final class AuthorizationService
+class AuthorizationService
 {
     /** @var TokenSetFactoryInterface */
     private $tokenSetFactory;
@@ -108,7 +108,12 @@ final class AuthorizationService
             throw new InvalidArgumentException('nonce MUST be provided for implicit and hybrid flows');
         }
 
-        return $endpointUri . '?' . http_build_query($params);
+        $glue = '?';
+        if (strpos($endpointUri, '?') !== false) {
+            $glue = '&';
+        }
+
+        return $endpointUri . $glue . http_build_query($params);
     }
 
     /**

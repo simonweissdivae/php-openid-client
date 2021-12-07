@@ -7,7 +7,7 @@ namespace Facile\OpenIDClient\Issuer;
 use Facile\JoseVerifier\JWK\JwksProviderInterface;
 use Facile\OpenIDClient\Issuer\Metadata\IssuerMetadataInterface;
 
-final class Issuer implements IssuerInterface
+class Issuer implements IssuerInterface
 {
     /** @var IssuerMetadataInterface */
     private $metadata;

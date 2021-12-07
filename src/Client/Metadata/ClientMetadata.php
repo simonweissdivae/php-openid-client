@@ -15,7 +15,7 @@ use function implode;
 /**
  * @psalm-import-type ClientMetadataObject from \Facile\JoseVerifier\Psalm\PsalmTypes
  */
-final class ClientMetadata implements ClientMetadataInterface
+class ClientMetadata implements ClientMetadataInterface
 {
     /**
      * @var array<string, mixed>

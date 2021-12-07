@@ -15,7 +15,7 @@ use function implode;
 /**
  * @psalm-import-type IssuerMetadataObject from \Facile\JoseVerifier\Psalm\PsalmTypes
  */
-final class IssuerMetadata implements IssuerMetadataInterface
+class IssuerMetadata implements IssuerMetadataInterface
 {
     /**
      * @var array<string, mixed>

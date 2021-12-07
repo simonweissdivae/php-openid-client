@@ -19,7 +19,7 @@ use Facile\OpenIDClient\Client\Metadata\ClientMetadataInterface;
 use Facile\OpenIDClient\Issuer\IssuerInterface;
 use Psr\Http\Client\ClientInterface as HttpClient;
 
-final class Client implements ClientInterface
+class Client implements ClientInterface
 {
     /** @var IssuerInterface */
     private $issuer;
