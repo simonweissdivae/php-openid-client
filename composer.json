@@ -1,5 +1,5 @@
 {
-    "name": "facile-it/php-openid-client",
+    "name": "simonweissdivae/php-openid-client",
     "description": "OpenID (OIDC) Client",
     "type": "library",
     "license": "MIT",
@@ -7,6 +7,10 @@
         {
             "name": "Thomas Vargiu",
             "email": "thomas.vargiu@facile.it"
+        },
+        {
+            "name": "Simon Weiß",
+            "email": "simon.weiss@diva-e.com"
         }
     ],
     "minimum-stability": "stable",
