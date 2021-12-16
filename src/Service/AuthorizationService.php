@@ -38,6 +38,15 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 class AuthorizationService
 {
+    public const PARAMETER_KEY_CLIENT_ID = 'client_id';
+    public const PARAMETER_KEY_SCOPE = 'scope';
+    public const PARAMETER_KEY_RESPONSE_TYPE = 'response_type';
+    public const PARAMETER_KEY_REDIRECT_URI = 'redirect_uri';
+    public const PARAMETER_KEY_NONCE = 'nonce';
+    public const PARAMETER_KEY_CLAIMS = 'claims';
+    public const PARAMETER_SCOPE_VALUE_OPEN_ID = 'openid';
+    public const PARAMETER_RESPONSE_TYPE_VALUE_CODE = 'code';
+
     /** @var TokenSetFactoryInterface */
     private $tokenSetFactory;
 
@@ -80,10 +89,10 @@ class AuthorizationService
         $endpointUri = $issuerMetadata->getAuthorizationEndpoint();
 
         $params = array_merge([
-            'client_id' => $clientMetadata->getClientId(),
-            'scope' => 'openid',
-            'response_type' => $clientMetadata->getResponseTypes()[0] ?? 'code',
-            'redirect_uri' => $clientMetadata->getRedirectUris()[0] ?? null,
+            self::PARAMETER_KEY_CLIENT_ID => $clientMetadata->getClientId(),
+            self::PARAMETER_KEY_SCOPE => self::PARAMETER_SCOPE_VALUE_OPEN_ID,
+            self::PARAMETER_KEY_RESPONSE_TYPE => $clientMetadata->getResponseTypes()[0] ?? self::PARAMETER_RESPONSE_TYPE_VALUE_CODE,
+            self::PARAMETER_KEY_REDIRECT_URI => $clientMetadata->getRedirectUris()[0] ?? null,
         ], $params);
 
         $params = array_filter($params, static function ($value): bool {
@@ -97,14 +106,16 @@ class AuthorizationService
         foreach ($params as $key => $value) {
             if (null === $value) {
                 unset($params[$key]);
-            } elseif ('claims' === $key && (is_array($value) || $value instanceof JsonSerializable)) {
-                $params['claims'] = json_encode($value);
+            } elseif (self::PARAMETER_KEY_CLAIMS === $key && (is_array($value) || $value instanceof JsonSerializable)) {
+                $params[self::PARAMETER_KEY_CLAIMS] = json_encode($value);
             } elseif (! is_string($value)) {
                 $params[$key] = (string) $value;
             }
         }
 
-        if (! array_key_exists('nonce', $params) && 'code' !== ($params['response_type'] ?? '')) {
+        if (false === array_key_exists(self::PARAMETER_KEY_NONCE, $params)
+            && self::PARAMETER_RESPONSE_TYPE_VALUE_CODE !== ($params[self::PARAMETER_KEY_RESPONSE_TYPE] ?? '')
+        ) {
             throw new InvalidArgumentException('nonce MUST be provided for implicit and hybrid flows');
         }
 
