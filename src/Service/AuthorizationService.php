@@ -86,7 +86,7 @@ class AuthorizationService
     {
         $clientMetadata = $client->getMetadata();
         $issuerMetadata = $client->getIssuer()->getMetadata();
-        $endpointUri = $issuerMetadata->getAuthorizationEndpoint();
+        $endpointUri = $this->cleaningTheQueryParams($issuerMetadata->getAuthorizationEndpoint());
 
         $params = array_merge([
             self::PARAMETER_KEY_CLIENT_ID => $clientMetadata->getClientId(),
@@ -119,14 +119,20 @@ class AuthorizationService
             throw new InvalidArgumentException('nonce MUST be provided for implicit and hybrid flows');
         }
 
-        $glue = '?';
-        if (strpos($endpointUri, '?') !== false) {
-            $glue = '&';
-        }
-
-        return $endpointUri . $glue . http_build_query($params);
+        return $endpointUri . '?' . http_build_query($params);
     }
 
+    protected function cleaningTheQueryParams(string $endpointUri): string
+    {
+        $questionMarkPosition = strpos($endpointUri, '?');
+        
+        if ($questionMarkPosition !== false) {
+            $endpointUri = substr($endpointUri, 0, $questionMarkPosition - 1);
+        }
+        
+        return $endpointUri;
+    }
+    
     /**
      * @throws OAuth2Exception
      *
