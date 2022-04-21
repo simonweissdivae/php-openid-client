@@ -127,7 +127,7 @@ class AuthorizationService
         $questionMarkPosition = strpos($endpointUri, '?');
         
         if ($questionMarkPosition !== false) {
-            $endpointUri = substr($endpointUri, 0, $questionMarkPosition - 1);
+            $endpointUri = substr($endpointUri, 0, $questionMarkPosition);
         }
         
         return $endpointUri;
