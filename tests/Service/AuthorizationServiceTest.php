@@ -6,7 +6,9 @@ namespace Facile\OpenIDClientTest\Service;
 
 use Facile\OpenIDClient\AuthMethod\AuthMethodFactoryInterface;
 use Facile\OpenIDClient\AuthMethod\AuthMethodInterface;
+use Facile\OpenIDClient\Client\Client;
 use Facile\OpenIDClient\Client\ClientInterface as OpenIDClient;
+use Facile\OpenIDClient\Client\Metadata\ClientMetadata;
 use Facile\OpenIDClient\Client\Metadata\ClientMetadataInterface;
 use Facile\OpenIDClient\Issuer\IssuerInterface;
 use Facile\OpenIDClient\Issuer\Metadata\IssuerMetadataInterface;
@@ -122,5 +124,48 @@ class AuthorizationServiceTest extends TestCase
         $tokenSetFactory->fromArray(['foo' => 'bar'])->willReturn($tokenSet->reveal());
 
         static::assertSame($tokenSet->reveal(), $service->grant($openIdClient->reveal(), $claims));
+    }
+
+    public function testCallbackShouldNotProcessUnknownParams(): void
+    {
+        $tokenSetFactory = $this->prophesize(TokenSetFactoryInterface::class);
+        $client = $this->prophesize(ClientInterface::class);
+        $requestFactory = $this->prophesize(RequestFactoryInterface::class);
+        $idTokenVerifierBuilder = $this->prophesize(IdTokenVerifierBuilderInterface::class);
+        $tokenVerifierBuilder = $this->prophesize(TokenVerifierBuilderInterface::class);
+
+        $service = new AuthorizationService(
+            $tokenSetFactory->reveal(),
+            $client->reveal(),
+            $requestFactory->reveal(),
+            $idTokenVerifierBuilder->reveal(),
+            $tokenVerifierBuilder->reveal()
+        );
+
+        $issuer = $this->prophesize(IssuerInterface::class);
+        $clientMetadata = ClientMetadata::fromArray([
+            'client_id' => 'foobar',
+            'client_secret' => 'secret',
+            'redirect_uris' => [
+                'http://localhost/callback',
+            ],
+        ]);
+        $client = new Client(
+            $issuer->reveal(),
+            $clientMetadata
+        );
+
+        $tokenSet = $this->prophesize(TokenSetInterface::class);
+        $tokenSetFactory->fromArray([])->shouldBeCalled()->willReturn($tokenSet->reveal());
+
+        // Build poc request
+        $body = 'claims[iss]=foobar&claims[sub]=adminuser1'; // forge arbitrary claims
+        $headers = ['test' => 'test'];
+        $serverRequest = new \GuzzleHttp\Psr7\ServerRequest('POST', 'http://127.0.0.1:8082', $headers, $body);
+
+        $callbackParams = $service->getCallbackParams($serverRequest, $client);
+        $tokenSetResult = $service->callback($client, $callbackParams); // tokenSet contains forged claims
+
+        $this->assertSame($tokenSetResult, $tokenSet->reveal());
     }
 }

@@ -35,6 +35,7 @@ use Psr\Http\Message\ServerRequestInterface;
  * @link https://tools.ietf.org/html/rfc6749 RFC 6749
  *
  * @psalm-import-type TokenSetMixedType from TokenSetInterface
+ * @psalm-import-type TokenSetClaimsType from TokenSetInterface
  */
 class AuthorizationService
 {
@@ -80,6 +81,7 @@ class AuthorizationService
      * @param array<string, mixed> $params
      *
      * @template P as (array{scope?: string, response_type?: string, redirect_uri?: string, claims?: array<string, string>|JsonSerializable}&array<string, mixed>)|array<empty, empty>
+     *
      * @psalm-param P $params
      */
     public function getAuthorizationUri(OpenIDClient $client, array $params = []): string
@@ -95,9 +97,7 @@ class AuthorizationService
             self::PARAMETER_KEY_REDIRECT_URI => $clientMetadata->getRedirectUris()[0] ?? null,
         ], $params);
 
-        $params = array_filter($params, static function ($value): bool {
-            return null !== $value;
-        });
+        $params = array_filter($params, static fn ($value): bool => null !== $value);
 
         /**
          * @var string $key
@@ -107,7 +107,7 @@ class AuthorizationService
             if (null === $value) {
                 unset($params[$key]);
             } elseif (self::PARAMETER_KEY_CLAIMS === $key && (is_array($value) || $value instanceof JsonSerializable)) {
-                $params[self::PARAMETER_KEY_CLAIMS] = json_encode($value);
+                $params[self::PARAMETER_KEY_CLAIMS] = json_encode($value, JSON_THROW_ON_ERROR);
             } elseif (! is_string($value)) {
                 $params[$key] = (string) $value;
             }
@@ -125,14 +125,14 @@ class AuthorizationService
     protected function cleaningTheQueryParams(string $endpointUri): string
     {
         $questionMarkPosition = strpos($endpointUri, '?');
-        
+
         if ($questionMarkPosition !== false) {
             $endpointUri = substr($endpointUri, 0, $questionMarkPosition);
         }
-        
+
         return $endpointUri;
     }
-    
+
     /**
      * @throws OAuth2Exception
      *
@@ -157,11 +157,16 @@ class AuthorizationService
         ?AuthSessionInterface $authSession = null,
         ?int $maxAge = null
     ): TokenSetInterface {
-        $tokenSet = $this->tokenSetFactory->fromArray($params);
+        $allowedParams = ['code', 'state', 'token_type', 'access_token', 'id_token', 'refresh_token', 'expires_in', 'code_verifier'];
+        $tokenSet = $this->tokenSetFactory->fromArray(array_intersect_key(
+            $params,
+            array_fill_keys($allowedParams, true)
+        ));
 
         $idToken = $tokenSet->getIdToken();
 
         if (null !== $idToken) {
+            /** @psalm-var TokenSetClaimsType $claims */
             $claims = $this->idTokenVerifierBuilder->build($client)
                 ->withNonce(null !== $authSession ? $authSession->getNonce() : null)
                 ->withState(null !== $authSession ? $authSession->getState() : null)
@@ -219,6 +224,7 @@ class AuthorizationService
         $idToken = $tokenSet->getIdToken();
 
         if (null !== $idToken) {
+            /** @psalm-var TokenSetClaimsType $claims */
             $claims = $this->idTokenVerifierBuilder->build($client)
                 ->withNonce(null !== $authSession ? $authSession->getNonce() : null)
                 ->withState(null !== $authSession ? $authSession->getState() : null)
@@ -249,6 +255,7 @@ class AuthorizationService
         $idToken = $tokenSet->getIdToken();
 
         if (null !== $idToken) {
+            /** @psalm-var TokenSetClaimsType $claims */
             $claims = $this->idTokenVerifierBuilder->build($client)
                 ->withAccessToken($tokenSet->getAccessToken())
                 ->verify($idToken);
@@ -294,7 +301,9 @@ class AuthorizationService
      * @param array<string, mixed> $params
      *
      * @template P as array<string, mixed>
+     *
      * @psalm-param P $params
+     *
      * @psalm-assert-if-true array{response: string} $params
      */
     private function isResponseObject(array $params): bool
@@ -307,7 +316,9 @@ class AuthorizationService
      *
      * @template P as array<string, mixed>
      * @template OE as array{error: string, error_description?: string, error_uri?: string}
+     *
      * @psalm-param OE|P $params
+     *
      * @psalm-assert P $params
      */
     private function assertOAuth2Error(array $params): void
@@ -326,7 +337,9 @@ class AuthorizationService
      *
      * @template R as array<string, mixed>
      * @template ResObject as array{response: string}
+     *
      * @psalm-param R $params
+     *
      * @psalm-return (R is ResObject ? TokenSetMixedType : R)
      */
     private function processResponseParams(OpenIDClient $client, array $params): array

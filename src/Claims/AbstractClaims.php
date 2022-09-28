@@ -22,6 +22,7 @@ use Jose\Component\Signature\JWSVerifier;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use Jose\Component\Signature\Serializer\JWSSerializer;
 use function json_decode;
+use JsonException;
 use function sprintf;
 
 /**
@@ -60,10 +61,14 @@ abstract class AbstractClaims
     {
         $issuer = $client->getIssuer();
 
-        /** @var null|array<string, mixed> $header */
-        $header = json_decode(base64url_decode(explode('.', $jwt)[0] ?? '{}'), true);
-        /** @var array<string, mixed> $payload */
-        $payload = json_decode(base64url_decode(explode('.', $jwt)[1] ?? '{}'), true);
+        try {
+            /** @var null|array<string, mixed> $header */
+            $header = json_decode(base64url_decode(explode('.', $jwt)[0] ?? '{}'), true, 512, JSON_THROW_ON_ERROR);
+            /** @var array<string, mixed> $payload */
+            $payload = json_decode(base64url_decode(explode('.', $jwt)[1] ?? '{}'), true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            throw new InvalidArgumentException('Invalid JWT content', 0, $e);
+        }
 
         /** @var null|string $alg */
         $alg = $header['alg'] ?? null;
@@ -111,6 +116,7 @@ abstract class AbstractClaims
      * @return array<string, mixed>
      *
      * @psalm-param TokenSetClaimsType $claims
+     *
      * @psalm-return TokenSetClaimsType
      */
     protected function assignClaims(array $claims, array $sourceNames, array $sources): array
@@ -140,6 +146,7 @@ abstract class AbstractClaims
      * @return array<string, mixed>
      *
      * @psalm-param TokenSetClaimsType $claims
+     *
      * @psalm-return TokenSetClaimsType
      */
     protected function cleanClaims(array $claims): array

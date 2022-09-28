@@ -7,6 +7,7 @@ namespace Facile\OpenIDClient\Issuer\Metadata\Provider;
 use function is_array;
 use function json_decode;
 use function json_encode;
+use JsonException;
 use Psr\SimpleCache\CacheInterface;
 use function sha1;
 use function substr;
@@ -27,6 +28,7 @@ final class CachedProviderDecorator implements RemoteProviderInterface
 
     /**
      * @var callable
+     *
      * @psalm-var callable(string): string
      */
     private $cacheIdGenerator;
@@ -43,9 +45,7 @@ final class CachedProviderDecorator implements RemoteProviderInterface
         $this->provider = $provider;
         $this->cache = $cache;
         $this->cacheTtl = $cacheTtl;
-        $this->cacheIdGenerator = $cacheIdGenerator ?? static function (string $uri): string {
-            return substr(sha1($uri), 0, 65);
-        };
+        $this->cacheIdGenerator = $cacheIdGenerator ?? static fn (string $uri): string => substr(sha1($uri), 0, 65);
     }
 
     public function fetch(string $uri): array
@@ -54,8 +54,13 @@ final class CachedProviderDecorator implements RemoteProviderInterface
 
         /** @var string $cached */
         $cached = $this->cache->get($cacheId) ?? '';
-        /** @var null|string|IssuerMetadataObject $data */
-        $data = json_decode($cached, true);
+
+        try {
+            /** @var null|string|IssuerMetadataObject $data */
+            $data = json_decode($cached, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            $data = null;
+        }
 
         if (is_array($data)) {
             return $data;
@@ -63,7 +68,7 @@ final class CachedProviderDecorator implements RemoteProviderInterface
 
         $data = $this->provider->fetch($uri);
 
-        $this->cache->set($cacheId, json_encode($data), $this->cacheTtl);
+        $this->cache->set($cacheId, json_encode($data, JSON_THROW_ON_ERROR), $this->cacheTtl);
 
         return $data;
     }
